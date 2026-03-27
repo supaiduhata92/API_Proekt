@@ -32,6 +32,9 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-page="/dogs/random">Get a random dog</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-page="/favorites/index">фаворити</a>
+                        </li>
                     </ul>
 
                     <!-- Auth links (Login / Register) -->
@@ -75,9 +78,6 @@
 
     <script>
         // Small client-side helper to toggle auth UI based on sessionStorage JWT.
-        // - reads token from sessionStorage 'jwt'
-        // - decodes payload (base64url) and extracts username claim (unique_name / name)
-        // - shows "Hello, username" + Logout if token present, otherwise shows Login/Register
         (function () {
             function getUsernameFromJwt(token) {
                 if (!token) return null;
@@ -85,13 +85,10 @@
                     var parts = token.split('.');
                     if (parts.length < 2) return null;
                     var payload = parts[1];
-                    // base64url -> base64
                     payload = payload.replace(/-/g, '+').replace(/_/g, '/');
-                    // pad string length to multiple of 4
                     while (payload.length % 4) payload += '=';
                     var json = atob(payload);
                     var obj = JSON.parse(json);
-                    // common mappings: unique_name, name, or the mapped claim URI
                     return obj.unique_name || obj.name || obj['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || null;
                 } catch (e) {
                     console.warn('Failed to parse JWT', e);
@@ -117,16 +114,33 @@
                     if (navUser) navUser.style.display = 'none';
                 }
 
-                window.logout = function () {
-                    sessionStorage.removeItem('jwt');
-                    // optional: also remove any other auth keys you might use
-                    location.reload();
-                };
+                // logout: call server to clear any server-side cookies, then clear client storage and reload.
+                async function doLogout() {
+                    try {
+                        // Call server logout to delete favorites_auth cookie (HttpOnly cookie)
+                        await fetch('/api/auth/logout', {
+                            method: 'POST',
+                            credentials: 'same-origin', // ensure cookies are sent
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                    } catch (e) {
+                        // ignore network errors; we still clear client-side tokens
+                        console.warn('Server logout failed', e);
+                    } finally {
+                        // Clear client-side auth artifacts
+                        sessionStorage.removeItem('jwt');
+                        sessionStorage.removeItem('favoritesPosted');
+                        // reload so UI updates
+                        location.reload();
+                    }
+                }
+
+                window.logout = doLogout;
 
                 if (navLogout) {
                     navLogout.addEventListener('click', function (e) {
                         e.preventDefault();
-                        window.logout();
+                        doLogout();
                     });
                 }
             } catch (e) {

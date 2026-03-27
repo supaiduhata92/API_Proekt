@@ -57,6 +57,15 @@ namespace API_Proekt.Controllers
             return Ok(new { token });
         }
 
+        // LOGOUT - clear the server-side favorites auth cookie
+        [HttpPost("logout")]
+        public IActionResult Logout()
+        {
+            // Delete the favorites page cookie if present
+            Response.Cookies.Delete("favorites_auth");
+            return Ok(new { message = "Logged out" });
+        }
+
         // GENERATE TOKEN
         private string GenerateJwtToken(User user)
         {

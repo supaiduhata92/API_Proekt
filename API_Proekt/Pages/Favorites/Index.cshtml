@@ -39,8 +39,14 @@
 
 @if (!string.IsNullOrEmpty(Model.AuthenticatedUsername))
 {
-    <div class="mb-3">
-        <strong>Showing favorites for:</strong> @Model.AuthenticatedUsername
+    <div class="mb-3 d-flex align-items-center">
+        <strong class="me-2">Showing favorites for:</strong> @Model.AuthenticatedUsername
+
+        <form method="post" asp-page-handler="ClearAuth" class="ms-3">
+            <button type="submit" class="btn btn-outline-secondary btn-sm">Clear</button>
+            @* Include the antiforgery token *@
+            @Html.AntiForgeryToken()
+        </form>
     </div>
 }
 
@@ -59,6 +65,7 @@ else
                 <th>Image</th>
                 <th>Note</th>
                 <th>Created</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -77,6 +84,7 @@ else
                 </td>
                 <td>@item.Note</td>
                 <td>@item.CreatedAt.ToLocalTime().ToString("g")</td>
+                <td><a asp-page="./Details" asp-route-id="@item.Id">Details</a></td>
             </tr>
         }
         </tbody>

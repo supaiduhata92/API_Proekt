@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using API_Proekt.Data;
 using API_Proekt.Models;
+using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
 
 namespace API_Proekt.Pages.Favorites
@@ -14,31 +15,42 @@ namespace API_Proekt.Pages.Favorites
     public class IndexModel : PageModel
     {
         private readonly AppDbContext _context;
+        private const string AuthCookieName = "favorites_auth";
 
         public IndexModel(AppDbContext context)
         {
             _context = context;
         }
 
-        // Favorites that will be shown after successful "authentication" on the page
         public IList<Favorite> Favorite { get; set; } = new List<Favorite>();
 
-        // Show which user we're showing favorites for (null when not authenticated)
         public string? AuthenticatedUsername { get; set; }
 
-        // Form fields bound from the username/password form
         [BindProperty]
         public string? FormUsername { get; set; }
 
         [BindProperty, DataType(DataType.Password)]
         public string? FormPassword { get; set; }
 
-        // Keep GET simple; do not load all favorites by default
-        public void OnGet()
+        // On GET: if cookie exists, auto-load that user's favorites
+        public async Task OnGetAsync()
         {
+            if (Request.Cookies.TryGetValue(AuthCookieName, out var userIdValue)
+                && int.TryParse(userIdValue, out var userId))
+            {
+                var user = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
+                if (user != null)
+                {
+                    AuthenticatedUsername = user.Username;
+                    Favorite = await _context.Favorites
+                        .Where(f => f.UserId == user.Id)
+                        .OrderByDescending(f => f.CreatedAt)
+                        .ToListAsync();
+                }
+            }
         }
 
-        // Handler: post username + password; if valid load only that user's favorites
+        // Authenticate form; if successful set cookie and load favorites
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> OnPostAuthenticateAsync()
         {
@@ -48,36 +60,47 @@ namespace API_Proekt.Pages.Favorites
                 return Page();
             }
 
-            // Find user
             var user = await _context.Users
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Username == FormUsername);
 
-            if (user == null)
+            if (user == null || !BCrypt.Net.BCrypt.Verify(FormPassword, user.PasswordHash))
             {
                 ModelState.AddModelError(string.Empty, "Invalid username or password.");
                 return Page();
             }
-
-            // Verify password (plaintext, hashed in DB)
-            if (!BCrypt.Net.BCrypt.Verify(FormPassword, user.PasswordHash))
+                
+            // Set a session cookie with the user id so OnGet can auto-load favorites.
+            // Session cookie: do NOT set Expires — it will be cleared when the browser/process closes.
+            // Use HttpOnly=true so the cookie isn't accessible from JS (safer).
+            var cookieOptions = new CookieOptions
             {
-                ModelState.AddModelError(string.Empty, "Invalid username or password.");
-                return Page();
-            }
+                HttpOnly = true,                      // prevent JS access
+                Secure = Request.IsHttps,             // set secure on HTTPS
+                SameSite = SameSiteMode.Lax
+                // no Expires => session cookie (deleted when browser closes)
+            };
+            Response.Cookies.Append(AuthCookieName, user.Id.ToString(), cookieOptions);
 
-            // Auth successful — load only this user's favorites
+            // Load favorites for this user
             AuthenticatedUsername = user.Username;
-
             Favorite = await _context.Favorites
                 .Where(f => f.UserId == user.Id)
                 .OrderByDescending(f => f.CreatedAt)
                 .ToListAsync();
 
-            // Clear bound password for safety
+            // clear the posted password from memory
             FormPassword = null;
 
             return Page();
+        }
+
+        // Clear the auth cookie (so page will ask again)
+        [ValidateAntiForgeryToken]
+        public IActionResult OnPostClearAuth()
+        {
+            Response.Cookies.Delete(AuthCookieName);
+            return RedirectToPage(); // GET will show unauthenticated form
         }
     }
 }

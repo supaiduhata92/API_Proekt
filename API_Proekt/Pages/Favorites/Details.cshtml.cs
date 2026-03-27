@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -12,32 +10,28 @@ namespace API_Proekt.Pages.Favorites
 {
     public class DetailsModel : PageModel
     {
-        private readonly API_Proekt.Data.AppDbContext _context;
+        private readonly AppDbContext _context;
 
-        public DetailsModel(API_Proekt.Data.AppDbContext context)
+        public DetailsModel(AppDbContext context)
         {
             _context = context;
         }
 
-        public Favorite Favorite { get; set; } = default!;
+        public Favorite? Favorite { get; set; }
 
         public async Task<IActionResult> OnGetAsync(int? id)
         {
             if (id == null)
-            {
                 return NotFound();
-            }
 
-            var favorite = await _context.Favorites.FirstOrDefaultAsync(m => m.Id == id);
+            Favorite = await _context.Favorites
+                .AsNoTracking()
+                .FirstOrDefaultAsync(f => f.Id == id.Value);
 
-            if (favorite is not null)
-            {
-                Favorite = favorite;
+            if (Favorite == null)
+                return NotFound();
 
-                return Page();
-            }
-
-            return NotFound();
+            return Page();
         }
     }
 }
