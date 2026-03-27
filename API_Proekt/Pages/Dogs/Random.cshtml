@@ -1,0 +1,81 @@
+@page
+@model API_Proekt.Pages.Dogs.RandomModel
+
+<h2>Random Dog</h2>
+
+<form method="post" asp-page-handler="Fetch">
+    <button type="submit" class="btn btn-primary mb-3">Get random dog</button>
+</form>
+
+@if (!ModelState.IsValid)
+{
+    <div class="alert alert-danger">
+        Something went wrong fetching the dog. Try again.
+        @foreach (var err in ModelState.Values.SelectMany(v => v.Errors))
+        {
+            <div>@err.ErrorMessage</div>
+        }
+    </div>
+}
+
+@if (Model.Dog != null)
+{
+    <div class="card" style="max-width:540px;">
+        <img src="@Model.Dog.ImageUrl" class="card-img-top" alt="Dog image" />
+        <div class="card-body">
+            <h5 class="card-title">Breed: @Model.Dog.BreedName</h5>
+            <p class="card-text">@Model.Dog.BreedDescription</p>
+
+            <button id="btn-add-fav" class="btn btn-success">Add to favorites</button>
+        </div>
+    </div>
+
+    <div id="dog-message" class="mt-3"></div>
+
+    <script>
+        // Minimal client script: only used to POST the favorite with session JWT.
+        (function () {
+            const addBtn = document.getElementById('btn-add-fav');
+            const msg = document.getElementById('dog-message');
+            addBtn.addEventListener('click', async function (e) {
+                e.preventDefault();
+                const token = sessionStorage.getItem('jwt');
+                if (!token) {
+                    msg.innerHTML = '<div class="alert alert-warning">You must be logged in to add favorites.</div>';
+                    return;
+                }
+
+                const payload = {
+                    animalType: 'Dog',
+                    breed: '@(Model.Dog.BreedName.Replace("'", "\\'"))',
+                    imageUrl: '@(Model.Dog.ImageUrl)',
+                    note: '@(Model.Dog.BreedDescription.Replace("'", "\\'"))'
+                };
+
+                try {
+                    addBtn.disabled = true;
+                    msg.innerHTML = '<div class="alert alert-info">Saving favorite...</div>';
+                    const res = await fetch('/api/favorites', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + token
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!res.ok) {
+                        const txt = await res.text();
+                        msg.innerHTML = '<div class="alert alert-danger">Failed to save favorite: ' + txt + '</div>';
+                        addBtn.disabled = false;
+                        return;
+                    }
+                    msg.innerHTML = '<div class="alert alert-success">Saved to favorites.</div>';
+                } catch (err) {
+                    console.error(err);
+                    msg.innerHTML = '<div class="alert alert-danger">Unexpected error saving favorite.</div>';
+                    addBtn.disabled = false;
+                }
+            });
+        })();
+    </script>
+}
