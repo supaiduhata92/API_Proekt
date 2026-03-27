@@ -50,6 +50,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Register HttpClient factory so controllers can resolve IHttpClientFactory
+builder.Services.AddHttpClient();
+
 // JWT Authentication setup
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);

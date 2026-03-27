@@ -1,0 +1,130 @@
+@page
+@model API_Proekt.Pages.Cats.RandomModel
+
+<h2>Random Cat</h2>
+
+<div class="mb-3">
+    <button id="btn-fetch" class="btn btn-primary">Get random cat</button>
+    <button id="btn-add-fav" class="btn btn-success" disabled>Add to favorites</button>
+</div>
+
+<div id="cat-container" style="display:none;">
+    <div class="card" style="max-width:540px;">
+        <img id="cat-image" class="card-img-top" alt="Cat image" />
+        <div class="card-body">
+            <h5 class="card-title" id="cat-breed">Breed: —</h5>
+            <p class="card-text" id="cat-desc"></p>
+        </div>
+    </div>
+</div>
+
+<div id="message" class="mt-3"></div>
+
+@section Scripts {
+<script>
+    (function () {
+        const fetchBtn = document.getElementById('btn-fetch');
+        const addFavBtn = document.getElementById('btn-add-fav');
+        const imgEl = document.getElementById('cat-image');
+        const breedEl = document.getElementById('cat-breed');
+        const descEl = document.getElementById('cat-desc');
+        const container = document.getElementById('cat-container');
+        const msg = document.getElementById('message');
+
+        let currentCat = null; // will hold the last CatDto from API
+
+        function showMessage(text, type = 'info') {
+            msg.innerHTML = `<div class="alert alert-${type}" role="alert">${text}</div>`;
+        }
+
+        async function fetchRandomCat() {
+            showMessage('Loading...', 'info');
+            addFavBtn.disabled = true;
+            try {
+                const res = await fetch('/api/cats/random');
+                if (!res.ok) {
+                    const text = await res.text();
+                    showMessage('Failed to fetch cat: ' + text, 'danger');
+                    return;
+                }
+                const data = await res.json();
+                // expected shape: { id, imageUrl, breedName, breedDescription }
+                currentCat = data;
+                imgEl.src = data.imageUrl || '';
+                imgEl.alt = data.breedName || 'Cat image';
+                breedEl.textContent = 'Breed: ' + (data.breedName || 'Unknown');
+                descEl.textContent = data.breedDescription || '';
+                container.style.display = 'block';
+                addFavBtn.disabled = false;
+                showMessage('Loaded random cat.', 'success');
+            } catch (err) {
+                console.error(err);
+                showMessage('Unexpected error fetching cat.', 'danger');
+            }
+        }
+
+        async function addToFavorites() {
+            if (!currentCat) {
+                showMessage('No cat to add. Fetch one first.', 'warning');
+                return;
+            }
+
+            const token = sessionStorage.getItem('jwt');
+            if (!token) {
+                showMessage('You must be logged in to add favorites. Please login.', 'warning');
+                return;
+            }
+
+            const favoritePayload = {
+                // map CatDto -> Favorite model
+                animalType: 'Cat',
+                breed: currentCat.breedName || 'Unknown',
+                imageUrl: currentCat.imageUrl || '',
+                note: currentCat.breedDescription || ''
+            };
+
+            try {
+                addFavBtn.disabled = true;
+                showMessage('Saving favorite...', 'info');
+
+                const res = await fetch('/api/favorites', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify(favoritePayload)
+                });
+
+                if (!res.ok) {
+                    const txt = await res.text();
+                    showMessage('Failed to save favorite: ' + txt, 'danger');
+                    addFavBtn.disabled = false;
+                    return;
+                }
+
+                const saved = await res.json();
+                showMessage('Saved to favorites.', 'success');
+                addFavBtn.disabled = true;
+            } catch (err) {
+                console.error(err);
+                showMessage('Unexpected error saving favorite.', 'danger');
+                addFavBtn.disabled = false;
+            }
+        }
+
+        fetchBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            fetchRandomCat();
+        });
+
+        addFavBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            addToFavorites();
+        });
+
+        // auto-fetch on page load (optional)
+        // fetchRandomCat();
+    })();
+</script>
+}
