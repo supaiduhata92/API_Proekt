@@ -1,0 +1,36 @@
+@page
+@model API_Proekt.Pages.Account.LoginModel
+
+<h2>Login</h2>
+<form id="loginForm">
+    <label>Username</label><br />
+    <input id="username" /><br />
+    <label>Password</label><br />
+    <input id="password" type="password" /><br />
+    <button type="submit">Login</button>
+</form>
+
+<script>
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+
+  const res = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  });
+
+  if (!res.ok) {
+    const txt = await res.text();
+    alert('Login failed: ' + txt);
+    return;
+  }
+
+  const data = await res.json();
+  // Store token for current session (cleared when tab/window closes)
+  sessionStorage.setItem('jwt', data.token);
+  window.location.href = '/';
+});
+</script>

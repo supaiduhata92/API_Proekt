@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using API_Proekt.Data;
 using API_Proekt.Models;
+using API_Proekt.DTOs;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -22,34 +23,33 @@ namespace API_Proekt.Controllers
             _config = config;
         }
 
-        // ========================
         // REGISTER
-        // ========================
         [HttpPost("register")]
-        public async Task<IActionResult> Register(User model)
+        public async Task<IActionResult> Register([FromBody] RegisterDto dto)
         {
-            if (await _context.Users.AnyAsync(u => u.Username == model.Username))
+            if (await _context.Users.AnyAsync(u => u.Username == dto.Username))
                 return BadRequest("User already exists");
 
-            // Simple hash (for now)
-            model.PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.PasswordHash);
+            var user = new User
+            {
+                Username = dto.Username,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password)
+            };
 
-            _context.Users.Add(model);
+            _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
             return Ok("User created");
         }
 
-        // ========================
         // LOGIN
-        // ========================
         [HttpPost("login")]
-        public async Task<IActionResult> Login(User model)
+        public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
             var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Username == model.Username);
+                .FirstOrDefaultAsync(u => u.Username == dto.Username);
 
-            if (user == null || !BCrypt.Net.BCrypt.Verify(model.PasswordHash, user.PasswordHash))
+            if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
                 return Unauthorized("Invalid credentials");
 
             var token = GenerateJwtToken(user);
@@ -57,9 +57,7 @@ namespace API_Proekt.Controllers
             return Ok(new { token });
         }
 
-        // ========================
         // GENERATE TOKEN
-        // ========================
         private string GenerateJwtToken(User user)
         {
             var jwtSettings = _config.GetSection("Jwt");

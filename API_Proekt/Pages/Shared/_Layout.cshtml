@@ -27,6 +27,26 @@
                             <a class="nav-link text-dark" asp-area="" asp-page="/Privacy">Privacy</a>
                         </li>
                     </ul>
+
+                    <!-- Auth links (Login / Register) -->
+                    <ul class="navbar-nav" id="nav-auth">
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-page="/Account/Login">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-page="/Account/Register">Register</a>
+                        </li>
+                    </ul>
+
+                    <!-- Logged in user (hidden by default) -->
+                    <ul class="navbar-nav" id="nav-user" style="display:none;">
+                        <li class="nav-item">
+                            <span class="nav-link text-dark">Hello, <strong id="nav-username"></strong></span>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" href="#" id="nav-logout">Logout</a>
+                        </li>
+                    </ul>
                 </div>
             </div>
         </nav>
@@ -46,6 +66,68 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script>
+        // Small client-side helper to toggle auth UI based on sessionStorage JWT.
+        // - reads token from sessionStorage 'jwt'
+        // - decodes payload (base64url) and extracts username claim (unique_name / name)
+        // - shows "Hello, username" + Logout if token present, otherwise shows Login/Register
+        (function () {
+            function getUsernameFromJwt(token) {
+                if (!token) return null;
+                try {
+                    var parts = token.split('.');
+                    if (parts.length < 2) return null;
+                    var payload = parts[1];
+                    // base64url -> base64
+                    payload = payload.replace(/-/g, '+').replace(/_/g, '/');
+                    // pad string length to multiple of 4
+                    while (payload.length % 4) payload += '=';
+                    var json = atob(payload);
+                    var obj = JSON.parse(json);
+                    // common mappings: unique_name, name, or the mapped claim URI
+                    return obj.unique_name || obj.name || obj['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || null;
+                } catch (e) {
+                    console.warn('Failed to parse JWT', e);
+                    return null;
+                }
+            }
+
+            try {
+                var token = sessionStorage.getItem('jwt');
+                var username = getUsernameFromJwt(token);
+
+                var navAuth = document.getElementById('nav-auth');
+                var navUser = document.getElementById('nav-user');
+                var navUsername = document.getElementById('nav-username');
+                var navLogout = document.getElementById('nav-logout');
+
+                if (username) {
+                    if (navAuth) navAuth.style.display = 'none';
+                    if (navUser) navUser.style.display = 'flex';
+                    if (navUsername) navUsername.textContent = username;
+                } else {
+                    if (navAuth) navAuth.style.display = 'flex';
+                    if (navUser) navUser.style.display = 'none';
+                }
+
+                window.logout = function () {
+                    sessionStorage.removeItem('jwt');
+                    // optional: also remove any other auth keys you might use
+                    location.reload();
+                };
+
+                if (navLogout) {
+                    navLogout.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        window.logout();
+                    });
+                }
+            } catch (e) {
+                console.error('Auth UI initialization failed', e);
+            }
+        })();
+    </script>
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>
