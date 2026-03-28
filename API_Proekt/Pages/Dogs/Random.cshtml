@@ -27,16 +27,26 @@
             <p class="card-text">@Model.Dog.BreedDescription</p>
 
             <button id="btn-add-fav" class="btn btn-success">Add to favorites</button>
+            <button id="btn-ai" class="btn btn-outline-info ms-2">Generate breed info (AI)</button>
+
+            <div id="ai-desc" class="mt-3"></div>
         </div>
     </div>
 
     <div id="dog-message" class="mt-3"></div>
 
     <script>
-        // Minimal client script: only used to POST the favorite with session JWT.
         (function () {
             const addBtn = document.getElementById('btn-add-fav');
+            const aiBtn = document.getElementById('btn-ai');
             const msg = document.getElementById('dog-message');
+            const aiDesc = document.getElementById('ai-desc');
+
+            // helper to show a message
+            function showMessage(html, type = 'info') {
+                msg.innerHTML = `<div class="alert alert-${type}">${html}</div>`;
+            }
+
             addBtn.addEventListener('click', async function (e) {
                 e.preventDefault();
                 const token = sessionStorage.getItem('jwt');
@@ -54,7 +64,7 @@
 
                 try {
                     addBtn.disabled = true;
-                    msg.innerHTML = '<div class="alert alert-info">Saving favorite...</div>';
+                    showMessage('Saving favorite...', 'info');
                     const res = await fetch('/api/favorites', {
                         method: 'POST',
                         headers: {
@@ -65,15 +75,46 @@
                     });
                     if (!res.ok) {
                         const txt = await res.text();
-                        msg.innerHTML = '<div class="alert alert-danger">Failed to save favorite: ' + txt + '</div>';
+                        showMessage('Failed to save favorite: ' + txt, 'danger');
                         addBtn.disabled = false;
                         return;
                     }
-                    msg.innerHTML = '<div class="alert alert-success">Saved to favorites.</div>';
+                    showMessage('Saved to favorites.', 'success');
                 } catch (err) {
                     console.error(err);
-                    msg.innerHTML = '<div class="alert alert-danger">Unexpected error saving favorite.</div>';
+                    showMessage('Unexpected error saving favorite.', 'danger');
                     addBtn.disabled = false;
+                }
+            });
+
+            aiBtn.addEventListener('click', async function (e) {
+                e.preventDefault();
+                aiDesc.innerHTML = '';
+                showMessage('Generating AI description…', 'info');
+                aiBtn.disabled = true;
+
+                try {
+                    const res = await fetch('/api/ai/breed-info', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ breedName: '@(Model.Dog.BreedName.Replace("'", "\\'"))' })
+                    });
+
+                    if (!res.ok) {
+                        const txt = await res.text();
+                        showMessage('AI request failed: ' + txt, 'danger');
+                        aiBtn.disabled = false;
+                        return;
+                    }
+
+                    const data = await res.json();
+                    aiDesc.innerHTML = `<h6>AI description (source: ${data.source})</h6><p>${data.text}</p>`;
+                    showMessage('AI content generated.', 'success');
+                } catch (err) {
+                    console.error(err);
+                    showMessage('Unexpected AI error.', 'danger');
+                } finally {
+                    aiBtn.disabled = false;
                 }
             });
         })();

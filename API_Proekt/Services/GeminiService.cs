@@ -9,22 +9,23 @@ namespace API_Proekt.Services
 {
     public class GeminiService
     {
-        // Hardcoded per your request (not recommended for production)
-        private const string ApiKey = "AIzaSyClfhIHsPGlmiISf5wcn-xQNsx2p57M6Lk";
+
         // You requested "Genma 3 4B" — using a reasonable model id form
         private const string ModelName = "models/gemma-3-4b-it";
 
         private readonly IHttpClientFactory _httpFactory;
+        private readonly string _apiKey;
 
-        public GeminiService(IHttpClientFactory httpFactory)
+        public GeminiService(IHttpClientFactory httpFactory, IConfiguration configuration)
         {
             _httpFactory = httpFactory;
+            _apiKey = configuration["Gemini:ApiKey"]!;
         }
 
         public async Task<string> GenerateTextAsync(string prompt, int maxOutputTokens = 256, double temperature = 0.2, CancellationToken ct = default)
         {
             var client = _httpFactory.CreateClient();
-            var url = $"https://generativelanguage.googleapis.com/v1beta/{ModelName}:generateContent?key={ApiKey}";
+            var url = $"https://generativelanguage.googleapis.com/v1beta/{ModelName}:generateContent?key={_apiKey}";
 
             var body = new
             {
