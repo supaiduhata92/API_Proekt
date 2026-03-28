@@ -1,4 +1,5 @@
 using API_Proekt.Data;
+using API_Proekt.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -52,6 +53,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // Register HttpClient factory so pages/controllers can request external APIs
 builder.Services.AddHttpClient();
+
+// Register GeminiService for AI calls
+builder.Services.AddSingleton<GeminiService>();
 
 // JWT Authentication setup
 var jwtSettings = builder.Configuration.GetSection("Jwt");
