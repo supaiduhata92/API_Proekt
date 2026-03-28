@@ -29,7 +29,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   }
 
   const data = await res.json();
-  // Store token for current session (cleared when tab/window closes)
+      // Запазваме JWT в sessionStorage и пренасочваме към началната страница
   sessionStorage.setItem('jwt', data.token);
   window.location.href = '/';
 });

@@ -84,7 +84,10 @@ else
                 </td>
                 <td>@item.Note</td>
                 <td>@item.CreatedAt.ToLocalTime().ToString("g")</td>
-                <td><a asp-page="./Details" asp-route-id="@item.Id">Details</a></td>
+                <td><a asp-page="./Details" asp-route-id="@item.Id">Details</a>
+                    <a asp-page="./Delete" asp-route-id="@item.Id">Delete</a>
+                    <a asp-page="./Edit" asp-route-id="@item.Id">Edit</a>
+                </td>
             </tr>
         }
         </tbody>

@@ -19,12 +19,12 @@ namespace API_Proekt.Pages.Dogs
 
         public DogDto? Dog { get; set; }
 
-        // Render page initially (no dog)
+
         public void OnGet()
         {
         }
 
-        // Handler invoked when user clicks "Get random dog"
+
         public async Task<IActionResult> OnPostFetchAsync()
         {
             var client = _httpClientFactory.CreateClient();
@@ -63,7 +63,7 @@ namespace API_Proekt.Pages.Dogs
                 return Page();
             }
 
-            // 2) fetch details by id (includes breeds)
+            // Взимаме и детайлите за изображението, за да получим информация за породата
             var detailResp = await client.GetAsync(string.Format(ImageByIdUrlTemplate, first.Id));
             if (!detailResp.IsSuccessStatusCode)
             {
@@ -93,11 +93,10 @@ namespace API_Proekt.Pages.Dogs
                 BreedDescription = breed?.Temperament ?? breed?.BredFor ?? breed?.LifeSpan ?? breed?.Origin ?? breed?.Name ?? string.Empty
             };
 
-            // prefer direct breed description if available
+
             if (breed != null && !string.IsNullOrWhiteSpace(breed?.Name))
             {
-                // Many dog breed objects do not have a single "description" field;
-                // we combine common fields into a readable note.
+                // Комбинираме полета за описание, ако Description е празно
                 Dog.BreedDescription = string.IsNullOrWhiteSpace(breed.Description)
                     ? $"{(breed.Temperament ?? "").Trim()} {(breed.BredFor ?? "").Trim()}".Trim()
                     : breed.Description;
@@ -106,7 +105,7 @@ namespace API_Proekt.Pages.Dogs
             return Page();
         }
 
-        // Helper types for deserialization
+
         private class SearchResult
         {
             public string? Id { get; set; }

@@ -32,7 +32,7 @@ namespace API_Proekt.Pages.Favorites
         [BindProperty, DataType(DataType.Password)]
         public string? FormPassword { get; set; }
 
-        // On GET: if cookie exists, auto-load that user's favorites
+        // On GET: Проверява дали има бисквитки
         public async Task OnGetAsync()
         {
             if (Request.Cookies.TryGetValue(AuthCookieName, out var userIdValue)
@@ -50,7 +50,7 @@ namespace API_Proekt.Pages.Favorites
             }
         }
 
-        // Authenticate form; if successful set cookie and load favorites
+        // Authenticate form; Форма за автентикация
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> OnPostAuthenticateAsync()
         {
@@ -70,37 +70,36 @@ namespace API_Proekt.Pages.Favorites
                 return Page();
             }
                 
-            // Set a session cookie with the user id so OnGet can auto-load favorites.
-            // Session cookie: do NOT set Expires — it will be cleared when the browser/process closes.
-            // Use HttpOnly=true so the cookie isn't accessible from JS (safer).
+            // Създаваме бисквитки да пази кой е влязъл.
+
             var cookieOptions = new CookieOptions
             {
-                HttpOnly = true,                      // prevent JS access
-                Secure = Request.IsHttps,             // set secure on HTTPS
+                HttpOnly = true,                      
+                Secure = Request.IsHttps,             
                 SameSite = SameSiteMode.Lax
-                // no Expires => session cookie (deleted when browser closes)
+
             };
             Response.Cookies.Append(AuthCookieName, user.Id.ToString(), cookieOptions);
 
-            // Load favorites for this user
+
             AuthenticatedUsername = user.Username;
             Favorite = await _context.Favorites
                 .Where(f => f.UserId == user.Id)
                 .OrderByDescending(f => f.CreatedAt)
                 .ToListAsync();
 
-            // clear the posted password from memory
+
             FormPassword = null;
 
             return Page();
         }
 
-        // Clear the auth cookie (so page will ask again)
+        // Форма за да чисти потребителя
         [ValidateAntiForgeryToken]
         public IActionResult OnPostClearAuth()
         {
             Response.Cookies.Delete(AuthCookieName);
-            return RedirectToPage(); // GET will show unauthenticated form
+            return RedirectToPage(); 
         }
     }
 }

@@ -24,7 +24,6 @@ namespace API_Proekt.Controllers
             var client = _httpClientFactory.CreateClient();
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
-            // 1) search for an image that has breed info
             var searchResp = await client.GetAsync(SearchUrl);
             if (!searchResp.IsSuccessStatusCode)
                 return StatusCode((int)searchResp.StatusCode, "Failed to fetch cat search data");
@@ -47,7 +46,7 @@ namespace API_Proekt.Controllers
             if (string.IsNullOrEmpty(first?.Id))
                 return NotFound("Search result did not include an id");
 
-            // 2) request the image details by id (this includes breed info)
+            // взимаме детайлите за изображението, за да получим информация за породата
             var detailUrl = string.Format(ImageByIdUrlTemplate, first.Id);
             var detailResp = await client.GetAsync(detailUrl);
             if (!detailResp.IsSuccessStatusCode)
@@ -77,7 +76,6 @@ namespace API_Proekt.Controllers
             return Ok(dto);
         }
 
-        // Helper types for deserialization (shallow)
         private class SearchResult
         {
             public string? Id { get; set; }

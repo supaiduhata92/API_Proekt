@@ -35,7 +35,7 @@
         const container = document.getElementById('cat-container');
         const msg = document.getElementById('message');
 
-        let currentCat = null; // will hold the last CatDto from API
+        let currentCat = null;
 
         function showMessage(text, type = 'info') {
             msg.innerHTML = `<div class="alert alert-${type}" role="alert">${text}</div>`;
@@ -53,13 +53,12 @@
                     return;
                 }
                 const data = await res.json();
-                // expected shape: { id, imageUrl, breedName, breedDescription }
                 currentCat = data;
                 imgEl.src = data.imageUrl || '';
                 imgEl.alt = data.breedName || 'Cat image';
                 breedEl.textContent = 'Breed: ' + (data.breedName || 'Unknown');
                 descEl.textContent = data.breedDescription || '';
-                aiDescEl.innerHTML = ''; // clear previous AI content
+                    aiDescEl.innerHTML = ''; // изчистваме AI описанието при ново зареждане
                 container.style.display = 'block';
                 addFavBtn.disabled = false;
                 aiBtn.disabled = false;
@@ -83,7 +82,7 @@
             }
 
             const favoritePayload = {
-                // map CatDto -> Favorite model
+                    // мапване от CatDto към FavoriteCreateDto
                 animalType: 'Cat',
                 breed: currentCat.breedName || 'Unknown',
                 imageUrl: currentCat.imageUrl || '',

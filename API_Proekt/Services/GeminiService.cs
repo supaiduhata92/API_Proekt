@@ -10,7 +10,7 @@ namespace API_Proekt.Services
     public class GeminiService
     {
 
-        // You requested "Genma 3 4B" — using a reasonable model id form
+
         private const string ModelName = "models/gemma-3-4b-it";
 
         private readonly IHttpClientFactory _httpFactory;
@@ -20,6 +20,7 @@ namespace API_Proekt.Services
         {
             _httpFactory = httpFactory;
             _apiKey = configuration["Gemini:ApiKey"]!;
+            //Ключат се намира в secrets, съответно ако някой друг ползва това приложение ще трябва да си добави ключ в своите secrets под същото име. Взима се от Google AI studio
         }
 
         public async Task<string> GenerateTextAsync(string prompt, int maxOutputTokens = 256, double temperature = 0.2, CancellationToken ct = default)
@@ -53,8 +54,8 @@ namespace API_Proekt.Services
                 using var doc = JsonDocument.Parse(respText);
                 var root = doc.RootElement;
 
-                // Try common shapes, per Google responses:
-                // candidates[0].content.parts[0].text
+                // Проверка за различни формати на връщане на отговор:
+
                 if (root.TryGetProperty("candidates", out var cand) && cand.ValueKind == JsonValueKind.Array && cand.GetArrayLength() > 0)
                 {
                     var first = cand[0];
@@ -71,7 +72,7 @@ namespace API_Proekt.Services
                     }
                 }
 
-                // fallback: try `candidates[0].content` as plain string
+                // Фолбак
                 if (root.TryGetProperty("candidates", out var cand2) && cand2.ValueKind == JsonValueKind.Array && cand2.GetArrayLength() > 0)
                 {
                     var first = cand2[0];
@@ -81,12 +82,12 @@ namespace API_Proekt.Services
                     }
                 }
 
-                // As final fallback return raw response
+
                 return respText;
             }
             catch
             {
-                // parsing failed — return raw response
+
                 return respText;
             }
         }

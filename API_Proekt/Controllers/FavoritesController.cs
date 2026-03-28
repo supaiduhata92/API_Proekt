@@ -46,8 +46,7 @@ namespace API_Proekt.Controllers
         [HttpPost]
         public async Task<IActionResult> AddFavorite([FromBody] Favorite model)
         {
-            // TEMP: assume UserId = 1 for testing
-            //model.User = null; // Avoid EF trying to insert a new User
+
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
             model.UserId = userId;
             model.CreatedAt = DateTime.Now;
@@ -68,11 +67,6 @@ namespace API_Proekt.Controllers
             if (favorite == null)
                 return NotFound("Favorite not found");
 
-            //favorite.Note = model.Note;
-            //favorite.AnimalType = model.AnimalType;
-            //favorite.Breed = model.Breed;
-            //favorite.ImageUrl = model.ImageUrl;
-            // Only update fields that are NOT null
             if (model.AnimalType != null)
                 favorite.AnimalType = model.AnimalType;
 

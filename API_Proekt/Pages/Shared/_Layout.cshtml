@@ -79,7 +79,7 @@
     <script src="~/js/site.js" asp-append-version="true"></script>
 
     <script>
-        // Small client-side helper to toggle auth UI based on sessionStorage JWT.
+        // Скриптове базирани на sessionStorage JWT.
         (function () {
             function getUsernameFromJwt(token) {
                 if (!token) return null;
@@ -116,23 +116,23 @@
                     if (navUser) navUser.style.display = 'none';
                 }
 
-                // logout: call server to clear any server-side cookies, then clear client storage and reload.
+                // logout: Да изтрие всички бизквити от сайта и да презареди
                 async function doLogout() {
                     try {
-                        // Call server logout to delete favorites_auth cookie (HttpOnly cookie)
+                        
                         await fetch('/api/auth/logout', {
                             method: 'POST',
-                            credentials: 'same-origin', // ensure cookies are sent
+                            credentials: 'same-origin', 
                             headers: { 'Content-Type': 'application/json' }
                         });
                     } catch (e) {
-                        // ignore network errors; we still clear client-side tokens
+
                         console.warn('Server logout failed', e);
                     } finally {
-                        // Clear client-side auth artifacts
+
                         sessionStorage.removeItem('jwt');
                         sessionStorage.removeItem('favoritesPosted');
-                        // reload so UI updates
+
                         location.reload();
                     }
                 }
